@@ -1,19 +1,30 @@
-name: 在线购物7项目 - 自动化测试
+name: 在线购物7项目 - 定时自动化测试
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  schedule:
+    - cron: '0 */6 * * *'  # 每 6 小时自动执行一次
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: 设置 JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: maven
+
       - name: 运行 Maven 测试
         run: mvn test --batch-mode
+
+      - name: 保存测试报告
+        uses: actions/upload-artifact@v4
+        with:
+          name: 测试报告
+          path: target/surefire-reports/
