@@ -8,7 +8,7 @@ jobs:
   test-only:
     runs-on: ubuntu-latest
     steps:
-      - name: 拉取 Gitee 项目代码
+      - name: Checkout Gitee code
         uses: actions/checkout@v4
         with:
           repository: ZhiheZier_0719/online-shopping-system
