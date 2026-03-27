@@ -1,9 +1,9 @@
-name: 完整CI：拉取Gitee → 部署前后端 → Cypress测试
+name: 稳定版：前端构建 + 后端启动 + Cypress测试
 on:
   workflow_dispatch:
 
 jobs:
-  full-test:
+  stable-test:
     runs-on: ubuntu-latest
     services:
       mysql:
@@ -13,16 +13,10 @@ jobs:
           MYSQL_DATABASE: onlineshopping
         ports:
           - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
 
     steps:
-      - name: 克隆 Gitee 商城代码
-        run: |
-          git clone https://gitee.com/ZhiheZier_0719/online-shopping-system.git --branch dev project
+      - name: 克隆代码
+        run: git clone https://gitee.com/ZhiheZier_0719/online-shopping-system.git --branch dev project
 
       - name: 导入数据库
         run: |
@@ -30,7 +24,8 @@ jobs:
           sudo apt-get install -y mysql-client
           mysql -h127.0.0.1 -uroot -proot onlineshopping < project/onlineshopping.sql
 
-      - name: 设置 Java 11
+      # ========== 启动后端 ==========
+      - name: 设置 Java
         uses: actions/setup-java@v4
         with:
           java-version: 11
@@ -40,35 +35,38 @@ jobs:
         run: |
           cd project/backend
           chmod +x mvnw
-          ./mvnw spring-boot:run > backend.log 2>&1 &
+          ./mvnw spring-boot:run &
           sleep 80
 
-      - name: 设置 Node.js 20
+      # ========== 前端：构建生产版本（不会失败！） ==========
+      - name: 设置 Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: 启动前端（固定端口 8080）
+      - name: 构建前端并启动静态服务
         run: |
           cd project/frontend/vue-onlineshopping
           npm install
-          npm run dev -- --port 8080 > frontend.log 2>&1 &
-          sleep 60
+          npm run build
+          npm install -g serve
+          serve -s dist -l 5173 &
+          sleep 15
 
-      - name: 测试前端是否真的启动
-        run: |
-          curl --retry 20 --retry-delay 3 --retry-all-errors http://127.0.0.1:8080
-          echo "前端服务已正常启动"
+      # ========== 测试是否启动 ==========
+      - name: 测试前端
+        run: curl http://localhost:5173
 
-      - name: 拉取 Cypress 测试代码
+      # ========== 运行 Cypress ==========
+      - name: 拉取测试代码
         uses: actions/checkout@v4
         with:
           path: cypress-test
 
-      - name: 运行 Cypress 测试
+      - name: 运行测试
         uses: cypress-io/github-action@v6
         with:
           working-directory: cypress-test
           command: npx cypress run
         env:
-          CYPRESS_BASE_URL: http://127.0.0.1:8080
+          CYPRESS_BASE_URL: http://localhost:5173
