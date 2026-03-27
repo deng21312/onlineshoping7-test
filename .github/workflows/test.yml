@@ -1,9 +1,9 @@
-name: 最终稳定版：前后端启动 + 自动化测试
+name: 终极完整版：前后端部署 + Cypress测试
 on:
   workflow_dispatch:
 
 jobs:
-  final-test:
+  full-test:
     runs-on: ubuntu-latest
     services:
       mysql:
@@ -13,11 +13,13 @@ jobs:
           MYSQL_DATABASE: onlineshopping
         ports:
           - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
 
     steps:
-      # 1. 拉代码
+      # 1. 拉取代码
       - name: 克隆 Gitee 代码
-        run: git clone https://gitee.com/ZhiheZier_0719/online-shopping-system.git --branch dev project
+        run: |
+          git clone https://gitee.com/ZhiheZier_0719/online-shopping-system.git --branch dev project
 
       # 2. 导入数据库
       - name: 初始化数据库
@@ -26,34 +28,47 @@ jobs:
           sudo apt-get install -y mysql-client
           mysql -h127.0.0.1 -uroot -proot onlineshopping < project/onlineshopping.sql
 
-      # 3. 启动后端（这个一定能成功）
-      - name: 设置 Java 11
+      # 3. 启动后端 (正确：Java 17 + SB3)
+      - name: 设置 Java 17
         uses: actions/setup-java@v4
         with:
-          java-version: '11'
+          java-version: 17
           distribution: temurin
 
-      - name: 启动后端服务
+      - name: 启动后端 SpringBoot 3
         run: |
           cd project/backend
           chmod +x mvnw
           ./mvnw spring-boot:run &
-          sleep 90
+          sleep 80
 
-      # =============================================
-      # 🔥 核心修复：前端不装依赖、不跑 dev、不跑 build
-      # 直接用 Cypress 访问 **后端接口** 完成测试！
-      # =============================================
-      - name: 拉取 Cypress 测试代码
+      # 4. 启动前端 (正确：Vite + 端口 5173)
+      - name: 设置 Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 启动 Vite 前端
+        run: |
+          cd project/frontend/vue-onlineshopping
+          npm install
+          npm run dev &
+          sleep 40
+
+      # 5. 验证前端启动
+      - name: 测试前端是否可用
+        run: curl --retry 10 --retry-delay 3 http://127.0.0.1:5173
+
+      # 6. 运行 Cypress 测试
+      - name: 拉取 Cypress 代码
         uses: actions/checkout@v4
         with:
           path: cypress-test
 
-      - name: 运行 Cypress 测试（直接访问后端）
+      - name: 运行自动化测试
         uses: cypress-io/github-action@v6
         with:
           working-directory: cypress-test
           command: npx cypress run
         env:
-          # 重点：不访问前端！直接测后端接口！
-          CYPRESS_BASE_URL: http://localhost:8080
+          CYPRESS_BASE_URL: http://127.0.0.1:5173
