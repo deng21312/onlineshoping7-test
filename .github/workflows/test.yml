@@ -6,8 +6,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - name: 拉取Gitee代码
-        uses: actions/checkout@v4
-        with:
-          repository: https://gitee.com/ZhiheZier_0719/online-shopping-system.git
-          ref: dev
+      - name: 手动克隆Gitee仓库
+        run: |
+          git clone https://gitee.com/ZhiheZier_0719/online-shopping-system.git --branch dev project
