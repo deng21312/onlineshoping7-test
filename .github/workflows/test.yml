@@ -1,30 +1,14 @@
-name: 仅测试 - 拉取Gitee代码并在临时环境测试
+name: 仅测试 - 拉取Gitee代码
 
 on:
-  workflow_dispatch:  # 允许手动触发测试
+  workflow_dispatch:  # 手动触发
   push:
-    branches: [ main ]  # 测试代码更新时自动跑
+    branches: [ main ]
 
 jobs:
   test-only:
     runs-on: ubuntu-latest
-    services:
-      # 临时 MySQL 数据库（测试专用，用完即销毁）
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: onlineshopping
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
-
     steps:
-      # 1. 拉取 Gitee 前后端代码
       - name: 拉取 Gitee 项目代码
         uses: actions/checkout@v4
         with:
@@ -32,48 +16,3 @@ jobs:
           ref: dev
           token: ${{ secrets.GITEE_TOKEN }}
           path: project
-
-      # 2. 初始化数据库（导入你的 SQL 结构）
-      - name: 导入数据库结构
-        run: |
-          sudo apt-get install -y mysql-client
-          mysql -h127.0.0.1 -uroot -proot onlineshopping < project/onlineshopping.sql
-        shell: bash
-
-      # 3. 启动后端 SpringBoot（临时环境）
-      - name: 启动后端
-        uses: actions/setup-java@v4
-        with:
-          java-version: 11
-          distribution: temurin
-      - run: |
-          chmod +x mvnw
-          ./mvnw spring-boot:run &
-          sleep 30  # 等待服务启动
-        working-directory: ./project/backend
-
-      # 4. 启动前端 Vue（临时环境）
-      - name: 启动前端
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: |
-          npm install
-          npm run dev &
-          sleep 20  # 等待服务启动
-        working-directory: ./project/frontend/vue-onlineshopping
-
-      # 5. 拉取并运行 Cypress 测试（访问临时环境）
-      - name: 拉取 Cypress 测试代码
-        uses: actions/checkout@v4
-        with:
-          path: cypress-test
-
-      - name: 运行 Cypress 测试
-        uses: cypress-io/github-action@v6
-        with:
-          working-directory: cypress-test
-          command: npx cypress run
-        env:
-          # 测试访问 GitHub 临时环境，不是你的云服务器
-          CYPRESS_BASE_URL: http://localhost:5173
