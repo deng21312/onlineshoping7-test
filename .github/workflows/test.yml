@@ -20,71 +20,55 @@ jobs:
           --health-retries=3
 
     steps:
-      # 1. 拉取 Gitee 代码
       - name: 克隆 Gitee 商城代码
         run: |
           git clone https://gitee.com/ZhiheZier_0719/online-shopping-system.git --branch dev project
 
-      # 2. 初始化数据库（导入 onlineshopping.sql）
-      - name: 安装 MySQL 客户端并导入数据库
+      - name: 导入数据库
         run: |
           sudo apt-get update
           sudo apt-get install -y mysql-client
           mysql -h127.0.0.1 -uroot -proot onlineshopping < project/onlineshopping.sql
-        shell: bash
 
-      # 3. 启动后端 SpringBoot
       - name: 设置 Java 11
         uses: actions/setup-java@v4
         with:
           java-version: 11
           distribution: temurin
-      - name: 启动后端服务
+
+      - name: 启动后端
         run: |
           cd project/backend
           chmod +x mvnw
-          ./mvnw spring-boot:run &
-          sleep 70
-        shell: bash
+          ./mvnw spring-boot:run > backend.log 2>&1 &
+          sleep 80
 
-      # 4. 启动前端 Vue
       - name: 设置 Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: 启动前端服务
+
+      - name: 启动前端（固定端口 8080）
         run: |
           cd project/frontend/vue-onlineshopping
           npm install
-          npm run dev &
-          sleep 50
-        shell: bash
+          npm run dev -- --port 8080 > frontend.log 2>&1 &
+          sleep 60
 
-      # 5. 拉取 Cypress 测试代码（必须在运行测试之前）
+      - name: 测试前端是否真的启动
+        run: |
+          curl --retry 20 --retry-delay 3 --retry-all-errors http://127.0.0.1:8080
+          echo "前端服务已正常启动"
+
       - name: 拉取 Cypress 测试代码
         uses: actions/checkout@v4
         with:
           path: cypress-test
 
-      # 6. 等待并验证前端服务就绪
-      - name: 验证前端端口
-        run: |
-          for i in {1..20}; do
-            if curl -f http://localhost:5173/; then
-              echo "✅ 前端服务已就绪"
-              break
-            else
-              echo "⏳ 等待前端服务..."
-              sleep 5
-            fi
-          done
-        shell: bash
-
-      # 7. 运行 Cypress 自动化测试
-      - name: 运行自动化测试
+      - name: 运行 Cypress 测试
         uses: cypress-io/github-action@v6
         with:
           working-directory: cypress-test
           command: npx cypress run
         env:
-          CYPRESS_BASE_URL: http://localhost:5173
+          CYPRESS_BASE_URL: http://127.0.0.1:8080
