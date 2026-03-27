@@ -25,47 +25,60 @@ jobs:
         run: |
           git clone https://gitee.com/ZhiheZier_0719/online-shopping-system.git --branch dev project
 
-      # 2. 安装 Java 11
+      # 2. 导入数据库结构（如果有 SQL 文件）
+      - name: 初始化数据库
+        run: |
+          sudo apt-get install -y mysql-client
+          mysql -h127.0.0.1 -uroot -proot onlineshopping < project/onlineshopping.sql || echo "SQL文件不存在，跳过导入"
+        shell: bash
+
+      # 3. 安装 Java 11 并启动后端
       - name: 设置 Java 11
         uses: actions/setup-java@v4
         with:
           java-version: 11
           distribution: temurin
-
-      # 3. 启动后端 SpringBoot
-      - name: 启动后端服务
+      - name: 启动后端 SpringBoot
         run: |
           cd project/backend
           chmod +x mvnw
           ./mvnw spring-boot:run &
-          sleep 40
+          sleep 60  # 延长等待时间，确保后端完全启动
         shell: bash
 
-      # 4. 安装 Node.js 20
+      # 4. 安装 Node.js 20 并启动前端
       - name: 设置 Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      # 5. 启动前端 Vue
-      - name: 启动前端服务
+      - name: 启动前端 Vue
         run: |
           cd project/frontend/vue-onlineshopping
           npm install
           npm run dev &
-          sleep 25
+          sleep 40  # 延长等待时间，确保前端完全启动
         shell: bash
 
-      # 6. 运行 Cypress 测试
+      # 5. 验证服务是否启动（可选，用于调试）
+      - name: 验证前后端端口
+        run: |
+          curl -f http://localhost:8080/actuator/health || echo "后端未就绪"
+          curl -f http://localhost:5173/ || echo "前端未就绪"
+        shell: bash
+        continue-on-error: true
+
+      # 6. 运行 Cypress 测试（修正 baseUrl 端口）
       - name: 拉取 Cypress 测试代码
         uses: actions/checkout@v4
         with:
           path: cypress-test
-
       - name: 运行自动化测试
         uses: cypress-io/github-action@v6
         with:
           working-directory: cypress-test
           command: npx cypress run
         env:
+          # 请根据你的前端实际端口修改：
+          # Vue CLI: http://localhost:8080
+          # Vite: http://localhost:5173
           CYPRESS_BASE_URL: http://localhost:5173
