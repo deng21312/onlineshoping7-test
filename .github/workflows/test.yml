@@ -1,17 +1,13 @@
-name: 仅测试 - 拉取Gitee代码
+name: 拉取Gitee代码-纯测试
 on:
   workflow_dispatch:
-  push:
-    branches: [ main ]
 
 jobs:
-  test-only:
+  test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Gitee code
+      - name: 拉取代码
         uses: actions/checkout@v4
         with:
           repository: ZhiheZier_0719/online-shopping-system
           ref: dev
-          token: ${{ secrets.GITEE_TOKEN }}
-          path: project
