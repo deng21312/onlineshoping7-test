@@ -1,0 +1,8 @@
+{
+  "devDependencies": {
+    "csv-parse": "^6.2.1",
+    "cypress-file-upload": "^5.0.8",
+    "cypress-real-events": "^1.15.0",
+    "xlsx": "^0.18.5"
+  }
+}
