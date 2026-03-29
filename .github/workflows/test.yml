@@ -1,4 +1,4 @@
-name: 最终修复版：前后端部署 + Cypress测试
+name: 最终修复版：前后端部署 + Cypress无头测试
 on:
   workflow_dispatch:
 
@@ -16,42 +16,47 @@ jobs:
         options: --health-cmd="mysqladmin ping --host=127.0.0.1 -uroot -proot" --health-interval=10s --health-timeout=5s --health-retries=3
 
     steps:
-      - name: 克隆 Gitee 代码
+      # 1. 拉取 Gitee 前后端代码
+      - name: 克隆 Gitee 项目代码
         run: |
           git clone https://gitee.com/ZhiheZier_0719/online-shopping-system.git --branch dev project
 
-      # 关键步骤：等待MySQL完全就绪
-      - name: 等待MySQL服务启动
+      # 2. 等待 MySQL 完全就绪
+      - name: 等待 MySQL 服务启动
         run: until mysql -h127.0.0.1 -uroot -proot -e "SELECT 1"; do sleep 5; done
 
-      - name: 初始化数据库
+      # 3. 初始化数据库
+      - name: 导入数据库 SQL
         run: |
           sudo apt-get update
           sudo apt-get install -y mysql-client
           mysql -h127.0.0.1 -uroot -proot onlineshopping < project/onlineshopping.sql
 
-      - name: 设置 Java 17 + Maven 3.9.9
+      # 4. 配置 Java 17（使用项目自带 mvnw）
+      - name: 设置 Java 17
         uses: actions/setup-java@v4
         with:
           java-version: 17
           distribution: temurin
-          maven-version: 3.9.9
 
-      - name: 启动后端 SpringBoot 3
+      # 5. 启动后端（修复数据库连接地址）
+      - name: 启动 SpringBoot 后端
         run: |
           cd project/backend
-          # 修改application.yml强制使用127.0.0.1
-          sed -i 's/localhost/127.0.0.1/g' src/main/resources/application.yml
+          # 强制修改数据库地址为 127.0.0.1
+          sed -i 's/localhost/127.0.0.1/g' src/main/resources/application.properties
           chmod +x mvnw
           ./mvnw spring-boot:run &
           sleep 90
 
+      # 6. 配置 Node.js 20
       - name: 设置 Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: 启动 Vite 前端
+      # 7. 启动 Vite 前端（修复 rollup 依赖）
+      - name: 启动 Vue3 前端
         run: |
           cd project/frontend/vue-onlineshopping
           npm install @rollup/rollup-linux-x64-gnu --force
@@ -60,15 +65,18 @@ jobs:
           sleep 60
         shell: bash
 
-      - name: 测试前端
+      # 8. 验证前端服务
+      - name: 测试前端是否可用
         run: curl --retry 10 --retry-delay 3 http://localhost:5173
 
-      - name: 拉取 Cypress 代码
+      # 9. 拉取 GitHub 仓库的 Cypress 代码
+      - name: 拉取 Cypress 测试脚本
         uses: actions/checkout@v4
         with:
           path: cypress-test
 
-      - name: 运行 Cypress
+      # 10. 运行 Cypress 无头测试
+      - name: 执行无头自动化测试
         uses: cypress-io/github-action@v6
         with:
           working-directory: cypress-test
