@@ -1,4 +1,4 @@
-name: 部署项目到云服务器 114.55.144.88
+name: 轻量版部署到云服务器 114.55.144.88
 on:
   workflow_dispatch:
 
@@ -6,7 +6,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: 连接云服务器并自动部署
+      - name: 连接云服务器并部署
         uses: appleboy/ssh-action@master
         with:
           host: 114.55.144.88
@@ -41,38 +41,31 @@ jobs:
             -----END RSA PRIVATE KEY-----
 
           script: |
-            # 进入服务器目录
+            # 1. 进入目录，只拉代码，不重装环境
             cd /root
-
-            # 安装必备环境
-            apt update
-            apt install -y openjdk-17-jdk nodejs npm git mysql-server
-            export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-
-            # 拉取/更新项目代码
             if [ ! -d "project" ]; then
               git clone -b dev https://gitee.com/ZhiheZier_0719/online-shopping-system.git project
             else
-              cd project
-              git pull
-              cd ..
+              cd project && git pull && cd ..
             fi
 
-            # 启动后端
+            # 2. 只打包后端（跳过测试，加快速度）
             cd /root/project/backend
             sed -i 's/localhost/127.0.0.1/g' src/main/resources/application.properties
             chmod +x mvnw
-            ./mvnw clean package -DskipTests
+            ./mvnw clean package -DskipTests -T 1C  # 并行编译，加快打包
+
+            # 3. 重启后端
             pkill -f "java -jar" || true
             nohup java -jar target/*.jar > backend.log 2>&1 &
+            echo "✅ 后端启动完成"
 
-            # 启动前端
+            # 4. 只构建前端（不重装依赖，直接用现有 node_modules）
             cd /root/project/frontend/vue-onlineshopping
-            npm install --force
             npm run build
-            npm install -g serve --force
             pkill -f "serve" || true
             nohup serve -s dist -l 80 --host 0.0.0.0 > frontend.log 2>&1 &
+            echo "✅ 前端启动完成"
 
             echo "====================================================="
             echo " ✅ 部署完成！访问地址：http://114.55.144.88"
