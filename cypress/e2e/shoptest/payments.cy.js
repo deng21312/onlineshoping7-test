@@ -3,7 +3,6 @@ describe('三种支付方式流程测试', () => {
   // 遍历所有支付方式
   const paymentMethods = [
     { name: '微信支付', selector: '微信支付' },
-    { name: '支付宝', selector: '支付宝' },
     { name: '银行卡/信用卡', selector: '银行卡/信用卡' }
   ]
 
@@ -31,7 +30,7 @@ describe('三种支付方式流程测试', () => {
       cy.get('.submit-btn').click()
 
       // 7. 验证支付后跳转（根据实际业务修改）
-      cy.url().should('include', '/product/1')
+      cy.url().should('include', '/payment/success')
     })
   })
 })

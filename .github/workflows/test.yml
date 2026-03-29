@@ -26,18 +26,19 @@ jobs:
           sudo apt-get install -y mysql-client
           mysql -h127.0.0.1 -uroot -proot onlineshopping < project/onlineshopping.sql
 
-      - name: 设置 Java 17
+      - name: 设置 Java 17 + 自动安装适配Maven
         uses: actions/setup-java@v4
         with:
           java-version: 17
           distribution: temurin
+          maven-version: 3.9.9  # 🔥 这里强制升级Maven到3.8以上！
 
       - name: 启动后端 SpringBoot 3
         run: |
           cd project/backend
           chmod +x mvnw
           ./mvnw spring-boot:run &
-          sleep 80
+          sleep 90
 
       - name: 设置 Node.js 20
         uses: actions/setup-node@v4
