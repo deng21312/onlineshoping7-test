@@ -1,0 +1,56 @@
+name: 部署后端到云服务器
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy-backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: 部署后端
+        uses: appleboy/ssh-action@master
+        with:
+          host: 114.55.144.88
+          username: root
+          key: |
+            -----BEGIN RSA PRIVATE KEY-----
+            MIIEoAIBAAKCAQEAt1KS7ZA5RF8DrCsW0lGxIUklsj8EfAN9xyKV/eg9ZRSJBF23
+            ESO6Rhp0f7H/WKRy0Q1UVYeXHRC6mNiO70102OaU/XQOM8wov9wCkhySSlvUGPaG
+            vJVRhLGvh/gduVvd8+OOwCWwb85zI/qQ6ComjejkGbJqxxl/rzQVcQrcxT2VbWSR
+            t5XN5rIcCCQiIxxIP8aoIZNCf1EhxuXjzzQCkZ+AxN5U6PNzaUJhCQH5XNXPEIp1
+            fqa0hKANencMEa9xuuVtJEw76DJEg0IKmUeZCH+1z9VSEkqvgwBeqLBkWVNOd2sR
+            KwpvvN/Rlb23Xe9N8F2/JqX6QDUdtoPN6LS8eQIDAQABAoH/SIXJPR6RMmaClzCb
+            u4k85eIyRVcbxL+yh+7+ohE2hq13aJ74hIjKRXXQKVTG2/+WY9Xag90p3NJ9EJAq
+            qSwylSb56pjHphwhc5nNVNtNVsRr2P8jNoJ8Ue24LZM+0/PXcUp5lbNtUsU+ZglM
+            liPZ7zIrWOUWaA8eEXYTGx/j83nHa7tZBVy/WB7mj/NciE08AN33bvwkWcxWvOU0
+            gb5ymq1LkAamyg3PvqdBMAPuifl/U2KLe8foiQS5o+MdzX9wIDelsnsF02IdpDYu
+            9VhorY+d7HZI5uwrOuo7a8IEYwU3m5ijzsrmIYc31+m0Z8JgIzgUcGrE7ME2ekEG
+            QwyhAoGBAMq7ofs4LTLJnaUCiob9RBN7Wk8dPqMpbfKLBkfrOuqfhbGHM5TGMNzK
+            XfGbQmyfGFWXO9yErlqlL/0ZbPzn7QLj8uca7U+fJUxLlskMUyI3Sv6H61MEaKtQ
+            kSdt296uUNwsc/duP5nv8Fq9etV4ecwF1J8selyHlyKwuftFmzNJAoGBAOd9WJQa
+            JyM4GsweFgtrPtZ6zChFwd095Xf5+kBxOlzYzCR43jtcHIeZSzJcfv5inPt7xKMO
+            Sjg7+ML/yj+srb3cwZdxiDQeuSp0AA6u9BI/ZnYnorEtK4nbfG6Un4KSLvG015sW
+            sBepeU8GakMr0uyswz/Wo7yEqZYCsO+4PQ+xAoGAaW0z6jGnh47DVUlCArr4SO1P
+            5G5/4VetHoFfrczNIa/9VXnKwCZkyJzQR9GGtHfzrqbr8VxqUycuEn/DZq2xWlxy
+            N+6P1GUdf1SbwEeRf+yjKkRCgzR6vgQyx/9gZKff0u+nCtghaQsWwglhNFvncsrh
+            bDk0FKRKWzbuMJZdBEkCgYA6DFKUAOLjkAQYP0sj3ebJ/c0IJEXy5ryOE19PnZUX
+            Bz5Zvv1rQTPeRPB4Vn156NyYq3aptMGjzFYa/+2FfhWrUJozEcMn3rRsEt6Y0AJg
+            OQnGgzXm2/7Y+PMA/7/oDCQ9dC3EtDHAHT1QNbmb0nd35fKoJXi1o0arWU1pL3gQ
+            YQKBgDNi2v1Zxzb2rni6nvFeiyz/OaTSoppfShtKB9TFWSKHePNtlOEjVUU1Z0AG
+            6OGt5Xwz6DKoXm6cF26AjEdGeesZrkcOodSw7mPAFg2nx/jxwNVCIaGaGM+WKnqi
+            EU0mgY1Ek0DjlLcimK5Fr7rv615j/0nqBONKyOeAEoxKW1N/
+            -----END RSA PRIVATE KEY-----
+
+          script: |
+            cd /root
+            [ -d "project" ] && cd project && git pull || git clone -b dev https://gitee.com/ZhiheZier_0719/online-shopping-system.git project
+
+            cd /root/project/backend
+            sed -i 's/localhost/127.0.0.1/g' src/main/resources/application.properties
+            chmod +x mvnw
+            ./mvnw clean package -DskipTests -T 1C
+
+            pkill -f "java -jar" || true
+            nohup java -jar target/*.jar > /dev/null 2>&1 &
+
+            echo "✅ 后端部署完成！"
