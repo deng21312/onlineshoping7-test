@@ -1,11 +1,11 @@
-name: 终极版部署到云服务器 114.55.144.88
+name: 最终版部署到云服务器 114.55.144.88
 on:
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 15  # 主动延长超时到15分钟
+    timeout-minutes: 30  # 延长最大超时到30分钟
     steps:
       - name: 连接云服务器并部署
         uses: appleboy/ssh-action@master
@@ -42,29 +42,34 @@ jobs:
             -----END RSA PRIVATE KEY-----
 
           script: |
-            # 1. 拉取最新代码（最快速度）
+            # 1. 安装必备环境（一次性解决依赖问题）
+            apt update && apt install -y openjdk-17-jdk nodejs npm git
+            export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+            npm install -g vite --force  # 全局安装Vite，解决vite not found
+
+            # 2. 拉取/更新代码
             cd /root
             [ -d "project" ] && cd project && git pull || git clone -b dev https://gitee.com/ZhiheZier_0719/online-shopping-system.git project
 
-            # 2. 后端打包（已经很快了，直接执行）
+            # 3. 后端打包+启动（已经成功过，确保后台运行）
             cd /root/project/backend
             sed -i 's/localhost/127.0.0.1/g' src/main/resources/application.properties
             chmod +x mvnw
             ./mvnw clean package -DskipTests -T 1C
-
-            # 3. 后台启动后端（脚本不等待，直接放后台）
             pkill -f "java -jar" || true
             nohup java -jar target/*.jar > /root/backend.log 2>&1 &
             echo "✅ 后端已在后台启动"
 
-            # 4. 前端构建 + 后台启动
+            # 4. 前端安装依赖+构建+启动（解决vite not found）
             cd /root/project/frontend/vue-onlineshopping
+            npm install --force  # 安装项目依赖
             npm run build
+            npm install -g serve --force
             pkill -f "serve" || true
             nohup serve -s dist -l 80 --host 0.0.0.0 > /root/frontend.log 2>&1 &
             echo "✅ 前端已在后台启动"
 
             echo "====================================================="
             echo " ✅ 部署命令已提交！访问地址：http://114.55.144.88"
-            echo " 服务正在后台启动，请稍等1-2分钟再访问"
+            echo " 服务正在后台启动，请稍等2-3分钟再访问"
             echo "====================================================="
