@@ -1,8 +1,8 @@
 name: CICD 自动部署
 on:
-  push:
-    branches: [ dev ]  # 推送到 dev 分支自动部署
-  workflow_dispatch:   # 也可以手动点部署
+  repository_dispatch:
+    types: [ deploy ]
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -44,7 +44,6 @@ jobs:
             -----END RSA PRIVATE KEY-----
 
           script: |
-            # 后台执行部署，不阻塞 GitHub Action
             nohup /root/deploy.sh > /root/cicd.log 2>&1 &
             echo "✅ CICD 已启动！后台自动部署中…"
             echo "访问地址：http://114.55.144.88"
