@@ -1,7 +1,6 @@
 name: CICD 自动部署
 on:
   repository_dispatch:
-    types: [ deploy ]
   workflow_dispatch:
 
 jobs:
