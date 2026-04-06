@@ -1,5 +1,5 @@
 // 支付方式测试套件
-describe('三种支付方式流程测试', () => {
+describe('两种支付方式流程测试', () => {
   // 遍历所有支付方式
   const paymentMethods = [
     { name: '微信支付', selector: '微信支付' },
