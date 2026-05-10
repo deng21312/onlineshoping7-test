@@ -1,0 +1,5 @@
+[
+  {"password": "Password123", "username": "merchant_test001" },
+  {"password": "WrongPassword", "username": "merchant_test001" },
+  {"password": "SomePassword", "username": "non_existent" }
+]

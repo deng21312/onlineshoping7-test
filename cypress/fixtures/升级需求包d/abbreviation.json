@@ -1,0 +1,11 @@
+[
+  {
+    "username": "merchant_test001",
+    "password": "Password123",
+    "productName": "袜子",
+    "productPrice": "100",
+    "productStock": "10",
+    "productDesc": "这款秋冬纯棉针织保暖袜子，精选新疆长绒棉材质，柔软透气不闷脚，弹力贴合脚踝不勒腿，吸汗防臭耐磨耐穿，居家日常、户外运动多场景均可穿戴，版型百搭舒适四季适配",
+    "imageFile": "超凡大师.png"
+  }
+]

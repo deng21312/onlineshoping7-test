@@ -1,0 +1,7 @@
+[
+  { "shopName": "测试商户001", "password": "Password123", "phone": "13800138001", "username": "merchant_test001", "confirmPassword": "Password123" },
+  { "shopName": "另一个商户", "password": "AnotherPass456", "phone": "13800138002", "username": "merchant_test001", "confirmPassword": "AnotherPass456" },
+  { "shopName": "测试商户" ,"password": "Password123", "phone": "13800138003", "username": "", "confirmPassword": "Password123" },
+  { "shopName": "边界商户", "password": "Pwd1", "phone": "13800138004", "username": "merchantboundary", "confirmPassword": "Pwd1" },
+  { "shopName": "异常商户", "password": "Password123", "phone": "123456", "username": "merchantphone","confirmPassword": "Password123" }
+]
